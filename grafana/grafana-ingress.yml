@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    io.service: cb-grafana
+  name: cb-grafana
+spec:
+  tls:
+    - hosts:
+        - cbgrafana.<domain>
+  rules:
+    - host: cbgrafana.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: cb-grafana
+              servicePort: 3000
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

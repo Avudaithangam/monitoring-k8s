@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    io.service: prometheus
+  name: prometheus
+spec:
+  tls:
+    - hosts:
+        - cbprometheus.<domain>
+  rules:
+    - host: cbprometheus.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: prometheus
+              servicePort: 9090
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

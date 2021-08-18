@@ -1,0 +1,87 @@
+- include_vars:  /node_exporter/Monitoring/ansible/variables/monitoring_vars.yml
+- name: Check node_exporter.service is already installed or not. If installed , exit the process  
+  service_facts:
+  register: services_state
+- block:
+    - name: st file gen
+      run_once: true
+      include: /node_exporter/Monitoring/ansible/variables/stfileClean.yml job_name=node_exporter
+    - name: create group
+      group:
+        name: prometheus
+        state: present
+      become: yes
+      become_method: "sudo"
+    - name: create user
+      user:
+        name: prometheus
+        group: prometheus
+        createhome: no
+        system: yes
+        state: present
+      become: yes
+      become_method: "sudo"
+
+    - name: create opt directory for prometheus
+      file:
+        path: /opt/prometheus 
+        state: directory
+      become: yes
+      become_method: "sudo"
+
+    - name: download node exporter
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+        dest: /opt/prometheus
+      become: yes
+      become_method: "sudo"
+
+    - name: unarchive node exporter
+      unarchive:
+        remote_src: yes
+        src: "{{ dest_folder_nodeexporter }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: /opt/prometheus
+      become: yes
+      become_method: "sudo"
+
+    - name: Resolve directory permissions
+      file: dest={{ dest_folder_nodeexporter }} owner=prometheus group=prometheus mode=0755 recurse=yes
+      become: yes
+      become_method: "sudo"
+
+    - name: create service
+      copy:
+       dest: "/etc/systemd/system/node_exporter.service"
+       content: |
+         [Unit]
+         Description=Node Exporter
+         After=network-online.target
+         StartLimitInterval=9000
+         StartLimitBurst=50  
+         [Service]
+         User=prometheus
+         Group=prometheus
+         Type=simple
+         RestartSec=180
+         Restart=always 
+         ExecStart={{ dest_folder_nodeexporter }}/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter --web.listen-address=0.0.0.0:25000
+         [Install]
+         WantedBy=multi-user.target
+      become: yes
+      become_method: "sudo"
+
+    - name: Enable node exporter and start it
+      systemd:
+        name: node_exporter.service
+        state: started
+        enabled: True
+      become: yes
+      become_method: "sudo"
+
+    - name: st file gen
+#      run_once: true
+      include: /node_exporter/Monitoring/ansible/variables/stfilegen.yml env={{env_name}} job_port="25000" job_name=node_exporter type="infra" machine_ip={{inventory_hostname}}
+      become: yes
+      become_method: "sudo"
+
+  when: ansible_facts.services["node_exporter.service"] is not defined or  services_state.ansible_facts.services["node_exporter.service"].state != "running"

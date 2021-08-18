@@ -1,0 +1,47 @@
+env_name: 
+profile_name: 
+run_user: 
+run_user_group: 
+profile_path: /opt/Oracle/Middleware12/user_projects/domains
+scrapetarget_loc: scrape_targets
+
+dest_folder_nodeexporter: /opt/prometheus
+node_exporter_version: 1.0.1
+node_exporter_port: 25000
+
+dest_folder_kafkaexporter: /opt/prometheus/metric_exporters/kafka_exporter
+kafka_exporter_port: 25010
+kafka_exporter_version: 1.2.0
+kafka_port: 9025
+
+dest_folder_elasticsearchexporter: /opt/prometheus/metric_exporters/elasticsearch_exporter
+elasticsearch_exporter_port: 25020 
+elasticsearch_exporter_version: 1.1.0
+
+
+dest_folder_jmxexporter: /opt/prometheus/metric_exporters/jmx_exporter
+jmx_exporter_version: 0.13.0
+jmx_starting_exporter_port: 25030
+
+dest_folder_nginexexporter: /opt/prometheus/metric_exporters/nginex_exporter
+nginex_exporter_port: 25040
+nginex_exporter_version: 0.8.0
+nginex_port: 9015
+
+dest_folder_promptail: /opt/prometheus/metric_exporters/promptail
+promtail_client_url: http://loki.gpp.qa.provides.io/loki/api/v1/push 
+promptail_exporter_version: 1.6.1
+promtail_logs: /opt/prometheus/metric_exporters/promptail/log
+notifier_fileloc: grafana/etc/grafana/provisioning/notifiers
+alertingfile_fileloc: grafana/etc/grafana/provisioning/dashboards/alerting
+lokidatasource: PromLoki
+lokialertsemaillist: test@test.com
+
+dest_folder_mqexporter: /opt/prometheus/metric_exporters/mq_exporter
+mq_exporter_port: 25050
+
+dest_folder_processexporter: /opt/prometheus/metric_exporters/processexporter
+process_exporter_port: 25060
+process_exporter_version: 0.7.2 
+
+

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-probes
+data:
+  probes.json: |-
+    [
+      {
+        "targets": [ "<Application URL>" ]
+      }
+    ]

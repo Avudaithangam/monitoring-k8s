@@ -1,0 +1,39 @@
+- include_vars: variables/monitoring_vars.yml
+
+- name: Setting path for infra
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/infra"
+  when: job_name == "node_exporter" 
+- name: Setting path for APP
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/app"
+  when: job_name != "node_exporter"
+
+- name: Check file is created 
+  local_action: stat path="{{stPath}}/{{profile_name}}-{{job_name}}.json"
+  register: file
+- name: get contents of file
+  delegate_to: localhost
+  command: cat "{{stPath}}/{{profile_name|trim}}-{{job_name|trim}}.json"
+  register: filename
+  when: file.stat.exists == true  
+
+- name: complete the file after each run
+  delegate_to: localhost
+  lineinfile:
+     dest: "{{stPath}}/{{profile_name|trim}}-{{job_name|trim}}.json"
+     regexp: '},'
+     insertafter: EOF
+     line: '    }
+          ]'
+  when: file.stat.exists == true and filename.stdout.find('} ]') == -1
+
+
+#- name: Copy file to prometheus server
+#  become: true
+#  shell: 'sshpass -p prometheus scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{stPath}}/{{profile_name|trim}}-{{job_name|trim}}.json #prometheus@10.192.84.49:/home/prometheus/scrapetgts'
+#  delegate_to: localhost
+#  when: file.stat.exists == true  
+  
+
+  

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-linux-targets
+data:
+  prometheus_linux_west_india.yml: |-
+    - targets:
+      - <target ip address>:<port number>
+
+
+

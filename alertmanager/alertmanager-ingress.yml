@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    io.service: alertmanager
+  name: alertmanager
+spec:
+  tls:
+    - hosts:
+        - cbalertmanager.<domain>
+  rules:
+    - host: cbalertmanager.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: alertmanager
+              servicePort: 9093
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

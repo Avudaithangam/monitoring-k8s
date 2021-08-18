@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    app: jaeger
+    app.kubernetes.io/component: query-ingress
+    app.kubernetes.io/instance: simplest
+    app.kubernetes.io/managed-by: jaeger-operator
+    app.kubernetes.io/name: simplest-query
+    app.kubernetes.io/part-of: jaeger
+  name: simplest-query
+spec:
+  tls:
+    - hosts:
+        - cbjaeger.<domain>
+  rules:
+    - host: cbjaeger.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: simplest-query
+              servicePort: 16686
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

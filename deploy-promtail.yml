@@ -1,0 +1,60 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+      - promtail
+
+jobs:
+- deployment: promtail
+  displayName: Deploy promtail
+  environment: k8smonitoring
+  pool:
+    name: Pool
+  strategy: 
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'login'
+          displayName: Login to AKS
+
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'replace'
+            arguments: '-f  promtail/promtail-configmap.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update promtail config map
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'apply'
+            arguments: '-f  promtail/promtail-deployment.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update promtail deployment, service and ingress
+
+        - task: Kubernetes@1
+          inputs:
+            command: 'logout'
+          displayName: Logout of AKS
+          condition: Always()

@@ -1,0 +1,20 @@
+- include_vars: variables/monitoring_vars.yml
+
+- name: Setting path for infra
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/infra"
+  when: job_name == "node_exporter" 
+
+
+- name: Setting path for APP
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/app"
+  when: job_name != "node_exporter"
+
+- name: Removing existing APP file 
+  delegate_to: localhost
+  file:
+    path: "{{stPath}}/{{profile_name|trim}}-{{job_name|trim}}.json"
+    state: absent
+    
+    

@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    io.service: prom2teams
+  name: prom2teams
+spec:
+  tls:
+    - hosts:
+        - cbprom2teams.<domain>
+  rules:
+    - host: cbprom2teams.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: prom2teams
+              servicePort: 2000
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

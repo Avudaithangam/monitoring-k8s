@@ -1,0 +1,59 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+      - alertmanager
+jobs:
+- deployment: Alertmanager
+  displayName: Deploy Alertmanager
+  environment: k8smonitoring
+  pool:
+    name: Pool
+  strategy: 
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'login'
+          displayName: Login to AKS
+
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'replace'
+            arguments: '-f  alertmanager/alertmanager-configmap.yaml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update alertmanager config map
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'apply'
+            arguments: '-f  alertmanager/alertmanager-deployment.yaml -f alertmanager/alertmanager-service.yaml -f alertmanager/alertmanager-ingress.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update alertmanager deployment, service and ingress
+
+        - task: Kubernetes@1
+          inputs:
+            command: 'logout'
+          displayName: Logout of AKS
+          condition: Always()

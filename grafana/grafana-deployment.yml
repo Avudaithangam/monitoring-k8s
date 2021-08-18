@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    version: 1.0.0
+  labels:
+    io.service: cb-grafana
+  name: cb-grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.service: cb-grafana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        version: 1.0.0
+      labels:
+        io.service: cb-grafana
+    spec:
+      containers:
+        - image: grafana/grafana
+          name: cb-grafana
+          env:
+          - name: GF_DATABASE_URL
+            value: 'sqlite3:///var/lib/grafana/grafana.db?cache=private&mode=rwc&_journal_mode=WAL'
+          - name: GF_INSTALL_PLUGINS
+            value: grafana-clock-panel,grafana-simple-json-datasource,camptocamp-prometheus-alertmanager-datasource,grafana-piechart-panel
+          ports:
+            - containerPort: 3000
+          resources: {}
+          volumeMounts:
+            #- name: azurefile
+            #  mountPath: /var/lib/grafana
+          - name: grafana-azure
+            mountPath: /var/lib/grafana
+      hostname: cb-grafana
+      restartPolicy: Always
+      volumes:
+      - name: grafana-azure
+        azureFile:
+          secretName: azure-storage-secret
+          shareName: grafana
+          readOnly: false
+    
+      #- name: azurefile
+      #  persistentVolumeClaim:
+      #    claimName: azurefile
+        #- name: grafana-setup
+        #  configMap:
+        #    name: grafana-setup
+        #    items:
+        #    - key: setup.sh
+        #      path: setup.sh
+status: {}

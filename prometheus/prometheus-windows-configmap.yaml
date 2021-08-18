@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-windows-targets
+data:
+  prometheus_windows.yml: |-
+    - targets:
+      - <ip address>:<port number>
+
+

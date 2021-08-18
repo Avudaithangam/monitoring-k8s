@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: <ingress class>
+  labels:
+    io.service: blackbox
+  name: blackbox
+spec:
+  tls:
+    - hosts:
+        - cbblackbox.<domain>
+  rules:
+    - host: cbblackbox.<domain>
+      http:
+        paths:
+          - backend:
+              serviceName: blackbox
+              servicePort: 9115
+status:
+  loadBalancer:
+    ingress:
+      - ip: <ingress IP>

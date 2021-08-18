@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    version: 1.0.0
+  labels:
+    io.service: blackbox
+  name: blackbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.service: blackbox
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        version: 1.0.0
+      labels:
+        io.service: blackbox
+    spec:
+      containers:
+        - args:
+            - --config.file=/config/blackbox.yml
+          image: prom/blackbox-exporter
+          name: blackbox
+          ports:
+            - containerPort: 9115
+          resources: {}
+          volumeMounts:
+            - name: blackbox-yml
+              mountPath: /config
+      hostname: blackbox
+      restartPolicy: Always
+      volumes:
+      - name: blackbox-yml
+        configMap:
+          name: blackbox-yml
+          items:
+          - key: blackbox.yml
+            path: blackbox.yml
+status: {}

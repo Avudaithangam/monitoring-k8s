@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: prometheus-yml
+data:
+  prometheus.yml: |-
+    global:
+      scrape_interval:     120s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+      evaluation_interval: 120s # Evaluate rules every 15 seconds. The default is every 1 minute.
+      scrape_timeout: 90s
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+            - alertmanager:9093
+    rule_files:
+      - "/etc/prometheus/alerts/alert.rules"
+    scrape_configs:
+      - job_name: 'prometheus_localhost'
+        static_configs:
+          - targets: ['localhost:9090']         
+      - job_name: 'Applications'
+        metrics_path: /probe
+        params:
+          module: [http_2xx]  # Look for a HTTP 200 response.
+        file_sd_configs: 
+        - files:
+          - /etc/prometheus/probes/*.json 
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__meta_azure_machine_name]
+            target_label: instance
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: cbblackbox.<domain>
+      - job_name: WestIndia-Linux
+        azure_sd_configs:
+          - authentication_method: OAuth
+            subscription_id: <subscriptionID>
+            tenant_id: <tenantID>
+            client_id: <clientID>
+            client_secret: <secret_value>
+            port: 25000
+        relabel_configs:
+          - source_labels: [__meta_azure_machine_os_type]
+            regex: Linux
+            action: keep
+          - source_labels: [__meta_azure_machine_name]
+            action: replace
+            target_label: hostname
+          - source_labels: [__meta_azure_machine_tag_ClientID]
+            action: replace
+            target_label: operatingsystem
+            replacement: "Linux"
+                                                                        
+

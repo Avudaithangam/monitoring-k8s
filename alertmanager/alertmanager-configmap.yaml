@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config-yml
+data:
+  config.yml: |-
+    global:
+      smtp_smarthost: smtphost.com:25
+      smtp_from: abc@def.com
+      smtp_require_tls: false
+    route:
+      group_wait: 30s
+      group_interval: 5m
+      group_by: ['instance']
+      repeat_interval: 1h
+      receiver: team-X-mails
+      routes:
+      - match:
+          alertname: 'Host Monitor'
+        receiver: host_down-receiver
+      - match:
+          alertname: 'Disk_Space_Windows_Live'
+        receiver: Disk-Space-receiver
+      - match:
+          alertname: 'Application Monitor'
+        receiver: Application_monitor
+      - match:
+          alertname: 'Disk_Space_Linux_Live'
+        receiver: Disk-Space-receiver
+      - match:
+          alertname: 'Memory Monitor'
+        receiver: High-Memory-receiver
+      - match:
+          alertname: 'CPU Monitor'
+        receiver: High-CPU-receiver
+      - match:
+          alertname: 'Swap Monitor'
+        receiver: Swap-Space-receiver
+      - match:
+          alertname: 'UnusualDiskReadRate'
+        receiver: UnusualDiskReadRate
+      - match:
+          alertname: 'UnusualDiskWriteRate'
+        receiver: UnusualDiskWriteRate
+      - match:
+          alertname: 'HostUnusualNetworkThroughputIn'
+        receiver: HostUnusualNetworkThroughputIn
+      - match:
+          alertname: 'HostUnusualNetworkThroughputOut'
+        receiver: HostUnusualNetworkThroughputOut
+      
+    receivers:
+    - name: 'host_down-receiver'
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: 'Disk-Space-receiver'
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: 'team-X-mails'
+      email_configs:
+      - to: 'abc@def.com'
+        headers:
+          subject: "You have {{ .Alerts.Firing | len }} alert(s)"
+    - name: "Application_monitor"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "High-Memory-receiver"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "High-CPU-receiver"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "Swap-Space-receiver"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "UnusualDiskReadRate"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "UnusualDiskWriteRate"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "HostUnusualNetworkThroughputIn"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+    - name: "HostUnusualNetworkThroughputOut"
+      webhook_configs:
+      - url: 'https://cbprom2teams.<domain>/alertmanager'
+        send_resolved: true
+
+
+

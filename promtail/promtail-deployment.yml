@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    version: 1.0.0
+  labels:
+    io.service: promtail
+  name: promtail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.service: promtail
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        version: 1.0.0
+      labels:
+        io.service: promtail
+    spec:
+      containers:
+        - args:
+            - -config.file=/etc/promtail/promtail.yml
+          image: grafana/promtail:latest
+          name: promtail
+          resources: {}
+          volumeMounts:
+            - name: promtail-yml
+              mountPath: /etc/promtail
+      hostname: promtail
+      restartPolicy: Always
+      volumes:
+      - name: promtail-yml
+        configMap:
+          name: promtail-yml
+          items:
+          - key: promtail.yml
+            path: promtail.yml
+status: {}

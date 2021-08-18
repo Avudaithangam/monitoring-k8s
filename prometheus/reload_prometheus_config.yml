@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    spec:
+      containers:
+      - name: hello
+        image: curlimages/curl
+        command: ['sh', '-c', 'curl -X POST https://cbprometheus.<domain>/-/reload && sleep 10']
+      restartPolicy: Never

@@ -1,0 +1,114 @@
+- include_vars: variables/monitoring_vars.yml
+
+- name: Setting path for infra
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/infra"
+  when: job_name == "node_exporter" 
+
+
+- name: Setting path for APP
+  set_fact:
+    stPath: "{{builddir}}/{{scrapetarget_loc}}/app"
+  when: job_name != "node_exporter"
+
+- name: create directories if doesnt exist
+  delegate_to: localhost
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{builddir}}/{{scrapetarget_loc}}/app"
+    - "{{builddir}}/{{scrapetarget_loc}}/infra"
+
+
+- name: create jsonfile
+  delegate_to: localhost
+  file:
+    path: "{{stPath}}/{{profile_name}}-{{job_name}}.json"
+    state: touch
+- name: Add contents for individual exporter
+  local_action: 'lineinfile line="[ "  path={{stPath}}/{{profile_name}}-{{job_name}}.json'
+
+- name: update the configuration
+  delegate_to: localhost
+  blockinfile:
+    path: "{{stPath}}/{{profile_name}}-{{job_name}}.json"
+    marker: " "
+    block: |3 
+           {
+           "targets": [
+           "{{inventory_hostname}}:{{job_port}}"
+             ],
+            "labels": {
+            "job": "{{job_name}}",
+            "env": "{{env}}-{{profile_name}}",
+            "hostid": "{{profile_name}}-{{machine_ip}}",
+            "hostip": "{{machine_ip}}",
+            "type": "{{type}}",
+            "usage": "{{env | lower}}"
+            }
+            },
+  when: job_name == "node_exporter" and env != "NA"
+- name: update the configuration for generic
+  delegate_to: localhost
+  blockinfile:
+    path: "{{stPath}}/{{profile_name}}-{{job_name}}.json"
+    marker: " "
+    block: |3 
+           {
+           "targets": [
+           "{{inventory_hostname}}:{{job_port}}"
+             ],
+            "labels": {
+            "job": "{{job_name}}",
+            "tenant": "{{profile_name}}",
+            "hostip": "{{machine_ip}}"
+            }
+            },
+  when: job_name == "node_exporter" and env == "NA"
+  
+- name: update the configuration jmx
+  delegate_to: localhost
+  blockinfile:
+    path: "{{stPath}}/{{profile_name}}-{{job_name}}.json"
+    marker: " "
+    block: |3 
+           {
+           "targets": [
+           "{{inventory_hostname}}:{{job_port}}"
+             ],
+            "labels": {
+            "job": "{{job_name}}",
+            "env": "{{env}}-{{profile_name}}",
+            "tenant": "{{profile_name}}",
+            "hostip": "{{machine_ip}}",
+            "role": "{{role}}",
+            "jms": "{{role|replace('J','')|trim|lower}}",
+            "usage": "{{env | lower}}"
+            }
+            },
+  when: job_name == "jmx_exporter" 
+
+- name: update the configuration exporters than node and jmx
+  delegate_to: localhost
+  blockinfile:
+    path: "{{stPath}}/{{profile_name}}-{{job_name}}.json"
+    marker: " "
+    block: |3 
+           {
+           "targets": [
+           "{{inventory_hostname}}:{{job_port}}"
+             ],
+            "labels": {
+            "job": "{{job_name}}",
+            "env": "{{env}}-{{profile_name}}",
+            "tenant": "{{profile_name}}",
+            "hostip": "{{machine_ip}}",
+            "type": "{{type}}",
+            "usage": "{{env | lower}}"
+            }
+            },
+  when: job_name == "kafka_exporter" or job_name == "nginx_exporter" or job_name == "process_exporter" or job_name == "elasticsearch_exporter" or job_name == "mq_exporter"
+
+
+

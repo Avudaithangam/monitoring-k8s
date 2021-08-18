@@ -1,0 +1,99 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+      - prometheus
+parameters:
+  - name: secretsList
+    type: object
+    default:
+    - fcc_secret_value
+    - fti_secret_value
+    - ccb_secret_value
+    - frm_secret_value
+
+jobs:
+- deployment: Prometheus
+  displayName: Deploy Prometheus
+  environment: k8smonitoring
+  pool:
+    name: Pool
+  strategy: 
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'login'
+          displayName: Login to AKS
+
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'apply'
+            arguments: '-f  prometheus/prometheus-deployment.yaml -f prometheus/prometheus-service.yaml -f prometheus/prometheus-ingress.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update prometheus deployment, service and ingress
+        - ${{ each secret in parameters.secretsList }}:
+          #- script: |
+          #    echo ${{ secret }}
+          #    echo $(${{ secret }})
+          #  displayName: Updating Secret ${{ secret }}
+          - task: Bash@3
+            displayName: Updating Secret ${{ secret }} in prometheus configuration
+            inputs:
+              targetType: 'inline'
+              script: sed -i 's/${{ secret }}/$(${{ secret }})/g' prometheus/prometheus-configmap.yml
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'replace'
+            arguments: '-f  prometheus/prometheus-alerts-configmap.yaml -f prometheus/prometheus-configmap.yml -f prometheus/prometheus-linux-configmap.yaml -f prometheus/prometheus-probes-configmap.yaml -f prometheus/prometheus-windows-configmap.yaml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Update prometheus config map
+
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'delete'
+            arguments: '-f  prometheus/reload_prometheus_config.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Reload Prometheus configuration changes
+
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'cb-monitoring'
+            namespace: 'cb-monitoring'
+            command: 'apply'
+            arguments: '-f  prometheus/reload_prometheus_config.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
+          displayName: Reload Prometheus configuration changes
+
+        - task: Kubernetes@1
+          inputs:
+            command: 'logout'
+          displayName: Logout of AKS
+          condition: Always()

@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: prometheus-alerts
+data:
+  alert.rules: |-
+    groups:
+    - name: Disk_Space_Linux
+      rules:
+      - alert: Disk_Might_Fill_In_4Hours
+        expr: predict_linear(node_filesystem_free_bytes[1h], 4 * 3600) < 0
+        for: 5m
+        labels:
+          severity: minor
+        annotations:
+          summary: "Disk might be full in few hours"
+          description: "Disk might be full in 4 hours on {{ $labels.instance }}."
+    - name: Disk_Space_Windows
+      rules:
+      - alert: Disk_Might_Fill_In_4Hours
+        expr: predict_linear(wmi_logical_disk_free_bytes[1h], 4 * 3600) < 0
+        for: 5m
+        labels:
+          severity: minor
+        annotations:
+          summary: "Disk might be full in few hours"
+          description: "Disk might be full in 4 hours on {{ $labels.instance }}."
+    - name: Disk_Space_Linux_Live
+      rules:
+      - alert: Disk_Space_Linux_Live
+        expr: (node_filesystem_size_bytes{fstype=~"ext.?|xfs"}-node_filesystem_free_bytes{fstype=~"ext.?|xfs"}) *100/(node_filesystem_avail_bytes {fstype=~"ext.?|xfs"}+(node_filesystem_size_bytes{fstype=~"ext.?|xfs"}-node_filesystem_free_bytes{fstype=~"ext.?|xfs"})) > 90
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} usage is high in mountpoint {{ $labels.mountpoint }}"
+          description: "Node {{ $labels.instance }}'s filesystem {{ $labels.mountpoint }} has less than 10% disk space occupied is at {{ $value }}%"
+    - name: Disk_Space_Windows_Live
+      rules:
+      - alert: Disk_Space_Windows_Live
+    #    expr: (wmi_logical_disk_free_bytes{job='prometheus_windows'} / wmi_logical_disk_size_bytes{job='prometheus_windows'}) < 0.05
+        expr: wmi_logical_disk_free_bytes{job='prometheus_windows',volume='c:'}  < 30000000000
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node filesystem usage is high"
+          description: "Node {{ $labels.instance }}'s filesystem {{ $labels.volume }} has less than 30GB disk space remaining."
+    - name: Instance Down 
+      rules:
+    # Alert for any instance that is unreachable for >1 minute.
+      - alert: Host Monitor
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical 
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+    - name: Application Down
+      rules:
+    # Alert for any instance that is unreachable for >1 minute.
+      - alert: Application Monitor
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application on instance {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} has been down for more than 2 minutes."
+    - name: Memory Monitor
+      rules:
+      - alert: Memory Monitor
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host out of memory (instance {{ $labels.instance }})"
+          description: "Node memory is filling up VALUE = {{ $value }}"
+    - name: CPU Monitor
+      rules:
+      - alert: CPU Monitor
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Host high CPU load (instance {{ $labels.instance }})
+          description: CPU load is > 80%\n  VALUE = {{ $value }}\n
+    - name: Swap Monitor
+      rules:
+      - alert: Swap Monitor
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Host swap is filling up (instance {{ $labels.instance }})
+          description: Swap is filling up (>80%)\n  VALUE = {{ $value }}\n
+    - name: Disk I/O Read
+      rules:
+      - alert: UnusualDiskReadRate
+        expr: sum by (instance) (irate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Unusual disk read rate (instance {{ $labels.instance }})"
+          description: Disk is probably reading too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n
+    - name: Disk I/O Write
+      rules:
+      - alert: UnusualDiskWriteRate
+        expr: sum by (instance) (irate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusual disk write rate (instance {{ $labels.instance }})"
+          description: Disk is probably writing too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n
+    - name: Network Throughput in
+      rules:
+      - alert: HostUnusualNetworkThroughputIn
+        expr: sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host unusual network throughput in (instance {{ $labels.instance }})
+          description: Host network interfaces are probably receiving too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n
+    - name: Network Throuput out
+      rules:
+      - alert: HostUnusualNetworkThroughputOut
+        expr: sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host unusual network throughput out (instance {{ $labels.instance }})
+          description: Host network interfaces are probably sending too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n
+          
